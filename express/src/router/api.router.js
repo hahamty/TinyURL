@@ -26,7 +26,7 @@ router.get('/', urlencodedParser, function(request, response) {
 router.post('/', urlencodedParser, function(request, response) {
     let longUrl = request.query['long_url'];
     if (longUrl) {
-        urlConversionService.addIfNotExists(longUrl, function(error, urlConversion) {
+        urlConversionService.addByLongUrl(longUrl, function(error, urlConversion) {
             if (error) {
                 response.json({short_url: ''});
             } else {

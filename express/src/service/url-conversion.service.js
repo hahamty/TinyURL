@@ -2,7 +2,10 @@
 
 const mongoose = require('mongoose');
 
+const BSON = require('bson').BSON;
+
 const mongoUtil = require('../util/mongo.util');
+const redisUtil = require('../util/redis.util');
 const counterService = require('./counter.service');
 const base58CodecService = require('./base58-codec.service');
 
@@ -14,41 +17,25 @@ let urlConversionMongoSchema = mongoose.Schema({
 
 let UrlConversionMongoModel = mongoose.model('UrlConversion', urlConversionMongoSchema);
 
-function addIfNotExists(longUrl, callback) {
-    findUrlConversionByLongUrl(longUrl, function(error, urlConversion) {
+let redisClient = redisUtil.redisClient;
+
+function addByLongUrl(longUrl, callback) {
+    counterService.getNextSequenceByCounterName('shortUrlID', function(error, shortUrlIdInstance) {
         if (error) {
             console.log(error);
         }
-        if (urlConversion) {
-            callback(error, urlConversion);
-        } else {
+        var shortUrl = base58CodecService.encode(shortUrlIdInstance.counter_value);
+        if (shortUrl === 'api') {
             counterService.getNextSequenceByCounterName('shortUrlID', function(error, shortUrlIdInstance) {
                 if (error) {
                     console.log(error);
                 }
                 var shortUrl = base58CodecService.encode(shortUrlIdInstance.counter_value);
-                if (shortUrl === 'api') {
-                    counterService.getNextSequenceByCounterName('shortUrlID', function(error, shortUrlIdInstance) {
-                        if (error) {
-                            console.log(error);
-                        }
-                        var shortUrl = base58CodecService.encode(shortUrlIdInstance.counter_value);
-                        add(longUrl, shortUrl, callback);
-                    });
-                } else {
-                    add(longUrl, shortUrl, callback);
-                }
+                add(longUrl, shortUrl, callback);
             });
+        } else {
+            add(longUrl, shortUrl, callback);
         }
-    });
-}
-
-function findUrlConversionByLongUrl(longUrl, callback) {
-    UrlConversionMongoModel.findOne({long_url: longUrl}, function(error, urlConversion) {
-        if (error) {
-            console.log(error);
-        }
-        callback(error, urlConversion);
     });
 }
 
@@ -61,19 +48,46 @@ function add(longUrl, shortUrl, callback) {
         } else {
             callback(error, urlConversion);
         }
+        redisClient.hmset(shortUrl, {
+            short_url: urlConversion.short_url,
+            long_url: urlConversion.long_url,
+            created_time: urlConversion.created_time
+        });
     });
 }
 
+/**
+ * callback = function(error, urlConversion)
+ * urlConversion = {
+ *     short_url: ,
+ *     long_url: ,
+ *     created_time: 
+ * }
+ */
 function findUrlConversionByShortUrl(shortUrl, callback) {
-    UrlConversionMongoModel.findOne({short_url: shortUrl}, function(error, urlConversion) {
+    redisClient.hgetall(shortUrl, function(error, urlConversion) {
         if (error) {
             console.log(error);
         }
-        callback(error, urlConversion);
+        if (urlConversion) {
+            callback(error, urlConversion);
+        } else {
+            UrlConversionMongoModel.findOne({short_url: shortUrl}, function(error, urlConversion) {
+                if (error) {
+                    console.log(error);
+                }
+                callback(error, urlConversion);
+                redisClient.hmset(shortUrl, {
+                    short_url: urlConversion.short_url,
+                    long_url: urlConversion.long_url,
+                    created_time: urlConversion.created_time
+                });
+            });
+        }
     });
 }
 
 module.exports = {
-    addIfNotExists: addIfNotExists,
+    addByLongUrl: addByLongUrl,
     findUrlConversionByShortUrl: findUrlConversionByShortUrl
 };
