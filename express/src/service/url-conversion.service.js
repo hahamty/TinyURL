@@ -48,11 +48,11 @@ function add(longUrl, shortUrl, callback) {
         } else {
             callback(error, urlConversion);
         }
-        redisClient.hmset(shortUrl, {
+        redisClient.set(shortUrl, JSON.stringify({
             short_url: urlConversion.short_url,
             long_url: urlConversion.long_url,
             created_time: urlConversion.created_time
-        });
+        }));
     });
 }
 
@@ -65,23 +65,23 @@ function add(longUrl, shortUrl, callback) {
  * }
  */
 function findUrlConversionByShortUrl(shortUrl, callback) {
-    redisClient.hgetall(shortUrl, function(error, urlConversion) {
+    redisClient.get(shortUrl, function(error, urlConversionString) {
         if (error) {
             console.log(error);
         }
-        if (urlConversion) {
-            callback(error, urlConversion);
+        if (urlConversionString) {
+            callback(error, JSON.parse(urlConversionString));
         } else {
             UrlConversionMongoModel.findOne({short_url: shortUrl}, function(error, urlConversion) {
                 if (error) {
                     console.log(error);
                 }
                 callback(error, urlConversion);
-                redisClient.hmset(shortUrl, {
+                redisClient.set(shortUrl, JSON.stringify({
                     short_url: urlConversion.short_url,
                     long_url: urlConversion.long_url,
                     created_time: urlConversion.created_time
-                });
+                }));
             });
         }
     });
