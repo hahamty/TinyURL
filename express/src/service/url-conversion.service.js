@@ -2,8 +2,6 @@
 
 const mongoose = require('mongoose');
 
-const BSON = require('bson').BSON;
-
 const mongoUtil = require('../util/mongo.util');
 const redisUtil = require('../util/redis.util');
 const counterService = require('./counter.service');
