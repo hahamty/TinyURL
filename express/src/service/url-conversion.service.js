@@ -45,22 +45,17 @@ function add(longUrl, shortUrl, callback) {
             callback(error, null);
         } else {
             callback(error, urlConversion);
+            redisClient.set(shortUrl, JSON.stringify({
+                short_url: urlConversion.short_url,
+                long_url: urlConversion.long_url,
+                created_time: urlConversion.created_time
+            }));
         }
-        redisClient.set(shortUrl, JSON.stringify({
-            short_url: urlConversion.short_url,
-            long_url: urlConversion.long_url,
-            created_time: urlConversion.created_time
-        }));
     });
 }
 
 /**
- * callback = function(error, urlConversion)
- * urlConversion = {
- *     short_url: ,
- *     long_url: ,
- *     created_time: 
- * }
+ * callback = function(error, urlConversionString)
  */
 function findUrlConversionByShortUrl(shortUrl, callback) {
     redisClient.get(shortUrl, function(error, urlConversionString) {
@@ -68,18 +63,19 @@ function findUrlConversionByShortUrl(shortUrl, callback) {
             console.log(error);
         }
         if (urlConversionString) {
-            callback(error, JSON.parse(urlConversionString));
+            callback(error, urlConversionString);
         } else {
             UrlConversionMongoModel.findOne({short_url: shortUrl}, function(error, urlConversion) {
                 if (error) {
                     console.log(error);
                 }
-                callback(error, urlConversion);
-                redisClient.set(shortUrl, JSON.stringify({
+                let urlConversionString = JSON.stringify({
                     short_url: urlConversion.short_url,
                     long_url: urlConversion.long_url,
                     created_time: urlConversion.created_time
-                }));
+                });
+                callback(error, urlConversionString);
+                redisClient.set(shortUrl, urlConversionString);
             });
         }
     });

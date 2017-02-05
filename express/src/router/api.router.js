@@ -11,15 +11,15 @@ let urlencodedParser = bodyParser.urlencoded({extended: false});
 router.get('/', urlencodedParser, function(request, response) {
     let shortUrl = request.query['short_url'];
     if (shortUrl) {
-        urlConversionService.findUrlConversionByShortUrl(shortUrl, function(error, urlConversion) {
+        urlConversionService.findUrlConversionByShortUrl(shortUrl, function(error, urlConversionString) {
             if (error) {
-                response.json({long_url: ''});
+                response.sendStatus(404);
             } else {
-                response.json({long_url: urlConversion.long_url});
+                response.end(urlConversionString);
             }
-        })
+        });
     } else {
-        response.json({long_url: ''});
+        response.sendStatus(404);
     }
 })
 
