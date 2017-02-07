@@ -21,4 +21,4 @@
 *.iws
 
 # IntelliJ
-**/out/
+**/build/
