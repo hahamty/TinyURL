@@ -2,4 +2,5 @@
 * text=auto
 
 # JS and TS files must always use LF for tools to work
+*.js eol=lf
 *.java eol=lf
