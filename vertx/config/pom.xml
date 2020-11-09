@@ -9,7 +9,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <vertx.version>3.4.2</vertx.version>
+        <vertx.version>3.9.4</vertx.version>
         <main.verticle>com.hahamty.tinyurl.gateway.MainVerticle</main.verticle>
     </properties>
 
